@@ -39,7 +39,7 @@ namespace RFiDGear
             Directory.CreateDirectory(LogDirectory);
 
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .WriteTo.File(
                     LogFilePath,

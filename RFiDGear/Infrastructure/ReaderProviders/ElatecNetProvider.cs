@@ -1,4 +1,4 @@
-﻿//using Elatec.NET.Model;
+//using Elatec.NET.Model;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -832,15 +832,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public override async Task<ERROR> CommitTransactionAsync()
         {
             if (!readerDevice.IsConnected)
+            {
+                Log.ForContext<ElatecNetProvider>().Warning("DESFire backup commit skipped because the reader is disconnected.");
                 return ERROR.TransportError;
+            }
 
             try
             {
+                Log.ForContext<ElatecNetProvider>().Information("DESFire backup commit started.");
                 await readerDevice.MifareDesfire_CommitTransactionAsync();
+                Log.ForContext<ElatecNetProvider>().Information("DESFire backup commit completed successfully.");
                 return ERROR.NoError;
             }
-            catch
+            catch (Exception e)
             {
+                Log.ForContext<ElatecNetProvider>().Error(e, "DESFire backup commit failed.");
                 return ERROR.AuthFailure;
             }
         }
@@ -1418,22 +1424,26 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, byte[] _data)
         {
+            var log = Log.ForContext<ElatecNetProvider>();
+            log.Information("DESFire WriteData started for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo}, KeyType {KeyType}, EncryptionMode {EncryptionMode}, PayloadLength {PayloadLength}.", _appID, _fileNo, _writeKeyNo, _keyTypeAppWriteKey, _encMode, _data?.Length ?? 0);
             try
             {
                 await SelectMifareDesfireApplicationAsync((uint)_appID);
-
+                log.Debug("DESFire application selection completed for AppId {AppId}.", _appID);
                 var authenticationResult = await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
                 if (authenticationResult != ERROR.NoError)
                 {
+                    log.Warning("DESFire WriteData authentication failed for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo} with {AuthenticationResult}.", _appID, _fileNo, _writeKeyNo, authenticationResult);
                     return authenticationResult;
                 }
-
+                log.Debug("DESFire WriteData authentication succeeded for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo}.", _appID, _fileNo, _writeKeyNo);
                 await WriteMifareDesfireDataAsync((byte)_fileNo, _data, _encMode);
+                log.Information("DESFire WriteData completed successfully for AppId {AppId}, FileNo {FileNo}, PayloadLength {PayloadLength}.", _appID, _fileNo, _data?.Length ?? 0);
                 return ERROR.NoError;
             }
             catch (Exception e)
             {
-                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
+                log.Error(e, "DESFire WriteData transport failure for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo}.", _appID, _fileNo, _writeKeyNo);
                 return ERROR.TransportError;
             }
         }
