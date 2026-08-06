@@ -43,7 +43,7 @@ namespace RFiDGear.Tests
                 new Action<MifareDesfireSetupViewModel, string>((vm, value) => vm.DesfireAppKeyCurrent = value),
                 new Func<MifareDesfireSetupViewModel, string>(vm => vm.DesfireAppKeyCurrent),
                 "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99:aa",
-                "AABBCCDDEEFF00112233445566778899"
+                "AABBCCDDEEFF00112233445566778899AA"
             };
 
             yield return new object[]
@@ -283,10 +283,49 @@ namespace RFiDGear.Tests
                 setter(viewModel, input);
 
                 Assert.Equal(expected, getter(viewModel));
-                Assert.Equal(32, getter(viewModel).Length);
+                Assert.Equal(expected.Length, getter(viewModel).Length);
             });
         }
 
+        [Fact]
+        public async Task DesfireKeys_PreserveAesValues_WhenValueIsSetBeforeType()
+        {
+            await RunOnStaThreadAsync(() =>
+            {
+                const string aesKey = "00112233445566778899AABBCCDDEEFF";
+                var viewModel = new MifareDesfireSetupViewModel
+                {
+                    SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
+                    SelectedDesfireMasterKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_DES,
+                    SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
+                    SelectedDesfireAppKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_DES,
+                    SelectedDesfireReadKeyEncryptionType = DESFireKeyType.DF_KEY_DES,
+                    SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_DES,
+                    DesfireMasterKeyCurrent = aesKey,
+                    DesfireMasterKeyTarget = aesKey,
+                    DesfireAppKeyCurrent = aesKey,
+                    DesfireAppKeyCurrentOld = aesKey,
+                    DesfireAppKeyTarget = aesKey,
+                    DesfireReadKeyCurrent = aesKey,
+                    DesfireWriteKeyCurrent = aesKey
+                };
+
+                viewModel.SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_AES;
+                viewModel.SelectedDesfireMasterKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_AES;
+                viewModel.SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_AES;
+                viewModel.SelectedDesfireAppKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_AES;
+                viewModel.SelectedDesfireReadKeyEncryptionType = DESFireKeyType.DF_KEY_AES;
+                viewModel.SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_AES;
+
+                Assert.Equal(aesKey, viewModel.DesfireMasterKeyCurrent);
+                Assert.Equal(aesKey, viewModel.DesfireMasterKeyTarget);
+                Assert.Equal(aesKey, viewModel.DesfireAppKeyCurrent);
+                Assert.Equal(aesKey, viewModel.DesfireAppKeyCurrentOld);
+                Assert.Equal(aesKey, viewModel.DesfireAppKeyTarget);
+                Assert.Equal(aesKey, viewModel.DesfireReadKeyCurrent);
+                Assert.Equal(aesKey, viewModel.DesfireWriteKeyCurrent);
+            });
+        }
         [Fact]
         public async Task TryGetDesfireWritePayload_ReturnsSelectedSlice()
         {

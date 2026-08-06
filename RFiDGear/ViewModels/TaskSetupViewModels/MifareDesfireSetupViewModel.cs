@@ -1446,7 +1446,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// Normalizes DESFire key input by stripping non-hex characters, uppercasing, and trimming to the expected length.
+        /// Normalizes DESFire key input by stripping non-hex characters and uppercasing without changing its length.
         /// </summary>
         /// <param name="value">The user-provided key input.</param>
         /// <param name="maxLength">The maximum number of hex characters to retain.</param>
@@ -1468,7 +1468,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
 
             var normalized = builder.ToString();
-            return normalized.Length > maxLength ? normalized.Substring(0, maxLength) : normalized;
+            return normalized;
         }
 
         /// <summary>
