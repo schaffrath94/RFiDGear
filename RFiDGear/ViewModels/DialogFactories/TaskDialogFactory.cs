@@ -166,10 +166,12 @@ namespace RFiDGear.ViewModel.DialogFactories
 
                     if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
+                        sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.AuthenticateApplication ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
+                        sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
