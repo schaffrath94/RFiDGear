@@ -2584,7 +2584,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private async Task OnNewCreateFileCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
-
             accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
             accessRights.readAccess = SelectedDesfireFileAccessRightRead;
             accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
@@ -2592,95 +2591,34 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             using (var device = ReaderDevice.Instance)
             {
-                if (device != null)
+                if (device == null)
                 {
-                    await UpdateReaderStatusCommand.ExecuteAsync(true);
-
-                    StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-
-                    if (IsValidDesfireKeyValue(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) && IsValidAppNumberNew != false)
-                    {
-                        var result = await device.AuthToMifareDesfireApplication(
-                                DesfireAppKeyCurrent,
-                                SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
-
-                        if (result == ERROR.NoError)
-                        {
-                            StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-
-                            result = await device.CreateMifareDesfireFile(
-                               DesfireAppKeyCurrent,
-                               SelectedDesfireAppKeyEncryptionTypeCurrent,
-                               SelectedDesfireFileType,
-                               accessRights,
-                               SelectedDesfireFileCryptoMode,
-                               AppNumberCurrentAsInt,
-                               FileNumberCurrentAsInt,
-                               FileSizeCurrentAsInt);
-
-                            if (result == ERROR.NoError)
-                            {
-                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                        }
-
-                        else
-                        {
-                            StatusText += string.Format("{0}: Unable to Authenticate to App {1}; Try to Continue Anyway...\n", DateTime.Now, AppNumberCurrentAsInt);
-
-                            result = await device.CreateMifareDesfireFile(
-                                  DesfireAppKeyCurrent,
-                                  SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                  SelectedDesfireFileType,
-                                  accessRights,
-                                  SelectedDesfireFileCryptoMode,
-                                  AppNumberCurrentAsInt,
-                                  FileNumberCurrentAsInt,
-                                  FileSizeCurrentAsInt);
-
-                            if (result == ERROR.NoError)
-                            {
-                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    CurrentTaskErrorLevel = ERROR.TransportError;
-                    await UpdateReaderStatusCommand.ExecuteAsync(false);
+                    await SetErrorStatusAsync(ERROR.TransportError, "{0}: Unable to Create File: {1}\n", DateTime.Now, ERROR.TransportError);
                     return;
                 }
+
+                await UpdateReaderStatusCommand.ExecuteAsync(true);
+                StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                if (!IsValidDesfireKeyValue(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) || IsValidAppNumberCurrent == false)
+                {
+                    await SetErrorStatusAsync(ERROR.ProtocolConstraint, "{0}: Unable to Create File: invalid application key or AppID.\n", DateTime.Now);
+                    return;
+                }
+
+                // The provider owns selection and authentication (key 0) immediately before CreateFile.
+                var result = await device.CreateMifareDesfireFile(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SelectedDesfireFileType, accessRights, SelectedDesfireFileCryptoMode, AppNumberCurrentAsInt, FileNumberCurrentAsInt, FileSizeCurrentAsInt);
+                if (result != ERROR.NoError)
+                {
+                    await SetErrorStatusAsync(result, "{0}: Unable to Create File: {1}\n", DateTime.Now, result);
+                    return;
+                }
+
+                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
+                CurrentTaskErrorLevel = ERROR.NoError;
+                await UpdateReaderStatusCommand.ExecuteAsync(false);
             }
-
-            await FinalizeTaskAsync();
-            return;
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
         public IAsyncRelayCommand ReadDataCommand => new AsyncRelayCommand(OnNewReadDataCommand);
         private async Task OnNewReadDataCommand()
         {
