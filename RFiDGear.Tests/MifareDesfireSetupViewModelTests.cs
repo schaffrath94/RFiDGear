@@ -288,7 +288,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task DesfireKey_DesValidation_PreservesButRejects32HexCharacters()
+        public async Task DesfireKey_32HexCharacters_IsValidForDesCompatibility()
         {
             await RunOnStaThreadAsync(() =>
             {
@@ -299,9 +299,6 @@ namespace RFiDGear.Tests
                 };
 
                 Assert.Equal("00000000000000000000000000000000", viewModel.DesfireWriteKeyCurrent);
-                Assert.False(viewModel.IsValidDesfireWriteKeyCurrent);
-
-                viewModel.DesfireWriteKeyCurrent = "0000000000000000";
                 Assert.True(viewModel.IsValidDesfireWriteKeyCurrent);
             });
         }

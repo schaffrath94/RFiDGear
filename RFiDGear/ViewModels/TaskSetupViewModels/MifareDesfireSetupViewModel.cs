@@ -1480,7 +1480,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             switch (keyType)
             {
                 case DESFireKeyType.DF_KEY_DES:
-                    return 16;
+                    return 32;
 
                 case DESFireKeyType.DF_KEY_3K3DES:
                     return 48;
