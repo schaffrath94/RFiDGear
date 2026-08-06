@@ -21,6 +21,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
@@ -1089,7 +1090,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => statusText;
             set
             {
+                var addedStatus = value != null && statusText != null && value.StartsWith(statusText, StringComparison.Ordinal)
+                    ? value.Substring(statusText.Length)
+                    : value;
                 statusText = value;
+                if (!string.IsNullOrWhiteSpace(addedStatus))
+                {
+                    var safeStatus = Regex.Replace(addedStatus, @"\b[0-9A-Fa-f]{16,}\b", "[REDACTED-HEX]");
+                    Log.ForContext<MifareDesfireSetupViewModel>().Information("DESFire UI status: {Status}", safeStatus.Trim());
+                }
                 OnPropertyChanged(nameof(StatusText));
             }
         }
