@@ -762,6 +762,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     masterKeyType,
                     keySettings);
 
+                var log = Log.ForContext<ElatecNetProvider>();
+                log.Information("DESFire ChangeKey started for AppId {AppId}, TargetKeyNo {TargetKeyNo}, AuthKeyNo {AuthKeyNo}, TargetKeyType {TargetKeyType}.", resolved.AppId, resolved.TargetKeyNo, resolved.AuthKeyNo, resolved.TargetKeyType);
                 // Scope selection: appId==0 selects PICC; appId>0 selects that application.
                 await readerDevice.MifareDesfire_SelectApplicationAsync(resolved.AppId);
 
@@ -780,7 +782,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 try
                 {
                     var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
-                    keyCount = (byte)ks.NumberOfKeys;
+                    keyCount = Math.Max((byte)ks.NumberOfKeys, (byte)(resolved.TargetKeyNo + 1));
+                    log.Information("DESFire ChangeKey key context: reader reported {ReportedKeyCount}, using {KeyCount} for target key {TargetKeyNo}.", ks.NumberOfKeys, keyCount, resolved.TargetKeyNo);
 
                     // Optional: keep provider state synced if other operations depend on it.
                     MaxNumberOfAppKeys = keyCount;
@@ -807,6 +810,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     (uint)keyCount,
                     ToElatecKeyType(keyTypeForContext));
 
+                await readerDevice.MifareDesfire_SelectApplicationAsync(resolved.AppId);
+                await readerDevice.MifareDesfire_AuthenticateAsync(resolved.NewTargetKeyHex, resolved.TargetKeyNo, (byte)ToElatecKeyType(resolved.TargetKeyType), DESFIRE_AUTHMODE_EV1);
+                log.Information("DESFire ChangeKey verified for AppId {AppId}, TargetKeyNo {TargetKeyNo}.", resolved.AppId, resolved.TargetKeyNo);
                 return ERROR.NoError;
             }
             catch

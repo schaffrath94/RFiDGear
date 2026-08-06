@@ -3382,11 +3382,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     {
                         AppendChangeAppKeyAuthStatusLines(authKeyNo, changeKeyMode);
 
-                        var result = await device.AuthToMifareDesfireApplication(
-                                authKeyValue,
-                                SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                authKeyNo,
-                                AppNumberCurrentAsInt);
+                        // ChangeKey is an atomic provider operation; a prior UI authentication would be cleared by SelectApplication.
+                        var result = ERROR.NoError;
 
                         if (IsValidAppNumberCurrent != false &&
                             IsValidAppNumberTarget != false &&
