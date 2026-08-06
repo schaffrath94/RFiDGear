@@ -86,6 +86,35 @@ namespace RFiDGear.Tests
             Assert.False(provider.StdDataFileRequested);
         }
 
+        [Fact]
+        public async Task ReadMiFareDESFireChipFile_WhenReaderRejectsAccess_ReturnsPermissionDenied()
+        {
+            var provider = new AccessDeniedReadTestProvider();
+
+            var result = await provider.ReadMiFareDESFireChipFile(
+                _appReadKey: "00000000000000000000000000000000",
+                _keyTypeAppReadKey: DESFireKeyType.DF_KEY_AES,
+                _readKeyNo: 0,
+                _encMode: RfidEncryptionMode.CM_ENCRYPT,
+                _fileNo: 3,
+                _appID: 16024277,
+                _fileSize: 32);
+
+            Assert.Equal(ERROR.PermissionDenied, result);
+        }
+
+        private sealed class AccessDeniedReadTestProvider : ElatecNetProvider
+        {
+            public override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
+            {
+                return Task.FromResult(ERROR.NoError);
+            }
+
+            protected override Task<byte[]> ReadMifareDesfireDataAsync(byte fileNo, int fileSize, RfidEncryptionMode encryptionMode)
+            {
+                throw new System.Exception("AccessDenied");
+            }
+        }
         private sealed class BackupFileTestProvider : ElatecNetProvider
         {
             public bool BackupFileRequested { get; private set; }

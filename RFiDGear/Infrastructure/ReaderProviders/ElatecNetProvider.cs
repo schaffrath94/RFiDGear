@@ -1388,34 +1388,35 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                        EncryptionMode _encMode,
                                        int _fileNo, int _appID, int _fileSize)
         {
+            var log = Log.ForContext<ElatecNetProvider>();
+            log.Information("DESFire ReadData started for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo}, KeyType {KeyType}, EncryptionMode {EncryptionMode}, RequestedLength {RequestedLength}.", _appID, _fileNo, _readKeyNo, _keyTypeAppReadKey, _encMode, _fileSize);
             try
             {
-
-                await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
-
-                if (await AuthToMifareDesfireApplication(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID) == ERROR.NoError)
+                // AuthToMifareDesfireApplication performs the required application selection itself.
+                var authenticationResult = await AuthToMifareDesfireApplication(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID);
+                if (authenticationResult != ERROR.NoError)
                 {
-                    MifareDESFireData = await readerDevice.MifareDesfire_ReadDataAsync((byte)_fileNo, _fileSize, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
-
-                    if (MifareDESFireData != null)
-                    {
-                        return ERROR.NoError;
-                    }
-                    else
-                    {
-                        return ERROR.AuthFailure;
-                    }
+                    log.Warning("DESFire ReadData authentication failed for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo} with {AuthenticationResult}.", _appID, _fileNo, _readKeyNo, authenticationResult);
+                    return authenticationResult;
                 }
-                else
+
+                MifareDESFireData = await ReadMifareDesfireDataAsync((byte)_fileNo, _fileSize, _encMode);
+                if (MifareDESFireData == null)
                 {
+                    log.Warning("DESFire ReadData returned no data for AppId {AppId}, FileNo {FileNo}.", _appID, _fileNo);
                     return ERROR.AuthFailure;
                 }
 
+                log.Information("DESFire ReadData completed successfully for AppId {AppId}, FileNo {FileNo}, ReadLength {ReadLength}.", _appID, _fileNo, MifareDESFireData.Length);
+                return ERROR.NoError;
             }
             catch (Exception e)
             {
-                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                return ERROR.TransportError;
+                var error = e.Message?.IndexOf("AccessDenied", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? ERROR.PermissionDenied
+                    : ERROR.TransportError;
+                log.Error(e, "DESFire ReadData failed for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo} with {Error}.", _appID, _fileNo, _readKeyNo, error);
+                return error;
             }
         }
 
@@ -1428,8 +1429,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             log.Information("DESFire WriteData started for AppId {AppId}, FileNo {FileNo}, KeyNo {KeyNo}, KeyType {KeyType}, EncryptionMode {EncryptionMode}, PayloadLength {PayloadLength}.", _appID, _fileNo, _writeKeyNo, _keyTypeAppWriteKey, _encMode, _data?.Length ?? 0);
             try
             {
-                await SelectMifareDesfireApplicationAsync((uint)_appID);
-                log.Debug("DESFire application selection completed for AppId {AppId}.", _appID);
+                // AuthToMifareDesfireApplication selects the application immediately before authentication.
+                // Do not select it again here: selecting an application clears the DESFire authentication state.
                 var authenticationResult = await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
                 if (authenticationResult != ERROR.NoError)
                 {
@@ -1451,6 +1452,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         protected virtual Task SelectMifareDesfireApplicationAsync(uint appId)
         {
             return readerDevice.MifareDesfire_SelectApplicationAsync(appId);
+        }
+
+        protected virtual Task<byte[]> ReadMifareDesfireDataAsync(byte fileNo, int fileSize, EncryptionMode encryptionMode)
+        {
+            return readerDevice.MifareDesfire_ReadDataAsync(fileNo, fileSize, (Elatec.NET.Cards.Mifare.EncryptionMode)encryptionMode);
         }
 
         protected virtual Task WriteMifareDesfireDataAsync(byte fileNo, byte[] data, EncryptionMode encryptionMode)
