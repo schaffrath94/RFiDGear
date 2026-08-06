@@ -1255,9 +1255,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 try
                 {
-                    if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, 0, _appID) == ERROR.NoError)
+                    var authenticationResult = await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, 0, _appID);
+                    if (authenticationResult != ERROR.NoError)
                     {
-                        var ar = BuildDesfireAccessRights(_accessRights);
+                        return authenticationResult;
+                    }
+
+                    var ar = BuildDesfireAccessRights(_accessRights);
 
                         switch (_fileType)
                         {
@@ -1284,8 +1288,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 }
 
                                 break;
+
+                            default:
+                                return ERROR.ProtocolConstraint;
                         }
-                    }
                 }
                 catch (Exception e)
                 {

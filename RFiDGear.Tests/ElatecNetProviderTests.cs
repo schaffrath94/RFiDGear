@@ -115,6 +115,33 @@ namespace RFiDGear.Tests
                 throw new System.Exception("AccessDenied");
             }
         }
+        [Fact]
+        public async Task CreateMifareDesfireFile_WhenAuthenticationFails_ReturnsAuthenticationError()
+        {
+            var provider = new AuthenticationFailureCreateFileProvider();
+
+            var result = await provider.CreateMifareDesfireFile(
+                _appMasterKey: "0000000000000000",
+                _keyTypeAppMasterKey: DESFireKeyType.DF_KEY_DES,
+                _fileType: Infrastructure.Tasks.FileType_MifareDesfireFileType.StdDataFile,
+                _accessRights: new DESFireAccessRights(),
+                _encMode: RfidEncryptionMode.CM_PLAIN,
+                _appID: 1,
+                _fileNo: 1,
+                _fileSize: 16);
+
+            Assert.Equal(ERROR.AuthFailure, result);
+        }
+
+        private sealed class AuthenticationFailureCreateFileProvider : ElatecNetProvider
+        {
+            public override bool IsConnected => true;
+
+            public override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
+            {
+                return Task.FromResult(ERROR.AuthFailure);
+            }
+        }
         private sealed class BackupFileTestProvider : ElatecNetProvider
         {
             public bool BackupFileRequested { get; private set; }

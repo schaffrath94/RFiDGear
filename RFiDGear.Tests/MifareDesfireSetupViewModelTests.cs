@@ -288,7 +288,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task DesfireKey_32HexCharacters_IsValidForDesCompatibility()
+        public async Task DesfireKey_DesValidation_PreservesButRejects32HexCharacters()
         {
             await RunOnStaThreadAsync(() =>
             {
@@ -298,8 +298,11 @@ namespace RFiDGear.Tests
                     DesfireWriteKeyCurrent = "00000000000000000000000000000000"
                 };
 
-                Assert.True(viewModel.IsValidDesfireWriteKeyCurrent);
                 Assert.Equal("00000000000000000000000000000000", viewModel.DesfireWriteKeyCurrent);
+                Assert.False(viewModel.IsValidDesfireWriteKeyCurrent);
+
+                viewModel.DesfireWriteKeyCurrent = "0000000000000000";
+                Assert.True(viewModel.IsValidDesfireWriteKeyCurrent);
             });
         }
 
@@ -684,7 +687,7 @@ namespace RFiDGear.Tests
                     SelectedDesfireReadKeyEncryptionType = DESFireKeyType.DF_KEY_AES,
                     SelectedDesfireReadKeyNumber = "1",
                     DesfireWriteKeyCurrent = "22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22",
-                    SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_DES,
+                    SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_AES,
                     SelectedDesfireWriteKeyNumber = "3"
                 };
 

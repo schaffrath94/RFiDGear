@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using RFiDGear.Infrastructure;
@@ -104,7 +104,7 @@ namespace RFiDGear.UI.MVVMDialogs.ViewModels
             get => appKey;
             set
             {
-                appKey = NormalizeDesfireKeyInput(value, GetExpectedKeyHexLength(SelectedKeyType));
+                appKey = NormalizeDesfireKeyInput(value);
                 OnPropertyChanged(nameof(AppKey));
                 RevalidateAppKey();
             }
@@ -140,10 +140,10 @@ namespace RFiDGear.UI.MVVMDialogs.ViewModels
 
         /// <summary>
         /// Strips anything that isn't a hex digit (including whitespace, e.g. pasted "00 11 22..."),
-        /// uppercases, and truncates to <paramref name="maxLength"/> - same normalization used
+        /// uppercases without changing the key length - same normalization used
         /// throughout MifareDesfireSetupViewModel's key fields.
         /// </summary>
-        private static string NormalizeDesfireKeyInput(string value, int maxLength)
+        private static string NormalizeDesfireKeyInput(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -159,8 +159,7 @@ namespace RFiDGear.UI.MVVMDialogs.ViewModels
                 }
             }
 
-            var normalized = builder.ToString();
-            return normalized.Length > maxLength ? normalized.Substring(0, maxLength) : normalized;
+            return builder.ToString();
         }
 
         private static int GetExpectedKeyHexLength(DESFireKeyType keyType)

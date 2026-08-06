@@ -1480,7 +1480,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             switch (keyType)
             {
                 case DESFireKeyType.DF_KEY_DES:
-                    return 32;
+                    return 16;
 
                 case DESFireKeyType.DF_KEY_3K3DES:
                     return 48;
@@ -2475,7 +2475,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (IsValidDesfireKeyValue(DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType))
+                    if (IsValidDesfireKeyValue(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent))
                     {
                         if (IsValidAppNumberNew == false)
                         {
@@ -2621,7 +2621,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             if (result == ERROR.NoError)
                             {
-                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
+                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2651,7 +2651,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             if (result == ERROR.NoError)
                             {
-                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
+                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2702,7 +2702,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 selectedDesfireReadKeyNumberAsInt, AppNumberCurrentAsInt);
 
 
-                        if (IsValidAppNumberNew != false && result == ERROR.NoError)
+                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
@@ -2713,7 +2713,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             {
                                 FileSizeCurrent = device.MifareDESFireData.Length.ToString();
 
-                                StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
+                                StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
 
                                 var fromChipNode = EnsureDesfireDataNode(childNodeViewModelFromChip, FileNumberCurrentAsInt);
                                 var tempNode = EnsureDesfireDataNode(childNodeViewModelTemp, FileNumberCurrentAsInt);
@@ -2909,7 +2909,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                                                          SelectedDesfireWriteKeyEncryptionType,
                                                                          selectedDesfireWriteKeyNumberAsInt, AppNumberCurrentAsInt);
 
-                        if (IsValidAppNumberNew != false && result == ERROR.NoError)
+                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
