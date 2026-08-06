@@ -29,89 +29,66 @@ jobs:
         shell: pwsh
         run: |
           @'
+          import re
           from pathlib import Path
 
-          def replace_once(path: str, old: str, new: str) -> None:
+          def replace_regex_once(path: str, pattern: str, replacement: str) -> None:
               file_path = Path(path)
               text = file_path.read_text(encoding="utf-8-sig")
-              count = text.count(old)
+              updated, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE | re.DOTALL)
               if count != 1:
-                  raise RuntimeError(f"Expected exactly one match in {path}, found {count}")
-              file_path.write_text(text.replace(old, new, 1), encoding="utf-8")
+                  raise RuntimeError(f"Expected exactly one regex match in {path}, found {count}")
+              file_path.write_text(updated, encoding="utf-8")
 
-          replace_once(
+          replace_regex_once(
               "RFiDGear/Infrastructure/ReaderProviders/ElatecNetProvider.cs",
+              r'''^        public async override Task<ERROR> WriteMiFareDESFireChipFile\(string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,\s*\n\s*EncryptionMode _encMode,\s*\n\s*int _fileNo, int _appID, byte\[\] _data\)\s*\n        \{.*?^        \}\s*\n\s*        #endregion''',
               '''        public async override Task<ERROR> WriteMiFareDESFireChipFile(string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
-                                          EncryptionMode _encMode,
-                                          int _fileNo, int _appID, byte[] _data)
-          {
-              try
-              {
+                                        EncryptionMode _encMode,
+                                        int _fileNo, int _appID, byte[] _data)
+        {
+            try
+            {
+                await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                  await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+                var authResult = await AuthToMifareDesfireApplication(
+                    _appWriteKey,
+                    _keyTypeAppWriteKey,
+                    _writeKeyNo,
+                    _appID);
 
-                  if (await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID) == ERROR.NoError)
-                  {
-                      await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
-                  }
-              }
-              catch (Exception e)
-              {
-                  Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                  return ERROR.AuthFailure;
-              }
+                if (authResult != ERROR.NoError)
+                {
+                    return authResult;
+                }
 
-              return ERROR.NoError;
-          }''',
-              '''        public async override Task<ERROR> WriteMiFareDESFireChipFile(string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
-                                          EncryptionMode _encMode,
-                                          int _fileNo, int _appID, byte[] _data)
-          {
-              try
-              {
-                  await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+                await readerDevice.MifareDesfire_WriteDataAsync(
+                    (byte)_fileNo,
+                    _data,
+                    (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
 
-                  var authResult = await AuthToMifareDesfireApplication(
-                      _appWriteKey,
-                      _keyTypeAppWriteKey,
-                      _writeKeyNo,
-                      _appID);
+                return ERROR.NoError;
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
+                return ERROR.AuthFailure;
+            }
+        }
 
-                  if (authResult != ERROR.NoError)
-                  {
-                      return authResult;
-                  }
+        #endregion''')
 
-                  await readerDevice.MifareDesfire_WriteDataAsync(
-                      (byte)_fileNo,
-                      _data,
-                      (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
-
-                  return ERROR.NoError;
-              }
-              catch (Exception e)
-              {
-                  Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                  return ERROR.AuthFailure;
-              }
-          }''')
-
-          replace_once(
+          replace_regex_once(
               "RFiDGear/ViewModels/TaskSetupViewModels/MifareDesfireSetupViewModel.cs",
-              '''                            if (SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
-                              {
-                                  await device.CommitTransactionAsync();
-                              }
+              r'''^(\s*)if \(SelectedDesfireFileType == FileType_MifareDesfireFileType\.BackupFile && device\.GetType\(\) == typeof\(ElatecNetProvider\)\)\s*\n\1\{\s*\n\1\s+await device\.CommitTransactionAsync\(\);\s*\n\1\}\s*\n\s*\1if \(result == ERROR\.NoError\)''',
+              r'''\1if (result == ERROR.NoError &&
+\1    SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile &&
+\1    device.GetType() == typeof(ElatecNetProvider))
+\1{
+\1    result = await device.CommitTransactionAsync();
+\1}
 
-                              if (result == ERROR.NoError)''',
-              '''                            if (result == ERROR.NoError &&
-                                  SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile &&
-                                  device.GetType() == typeof(ElatecNetProvider))
-                              {
-                                  result = await device.CommitTransactionAsync();
-                              }
-
-                              if (result == ERROR.NoError)''')
+\1if (result == ERROR.NoError)''')
           '@ | python -
 
       - name: Run automated tests
