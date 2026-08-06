@@ -3378,20 +3378,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     var isAuthKeyValid = CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(authKeyValue) == KEY_ERROR.NO_ERROR;
                     var isOldKeyValid = !ShowAppKeyOldInputs || CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(oldKeyForTargetSlot) == KEY_ERROR.NO_ERROR;
 
-                    if (isAuthKeyValid && isOldKeyValid)
+                    if (isAuthKeyValid && isOldKeyValid && IsValidAppNumberCurrent != false && IsValidDesfireAppKeyTarget != false && IsValidDesfireAppKeyVersionTarget != false)
                     {
                         AppendChangeAppKeyAuthStatusLines(authKeyNo, changeKeyMode);
 
                         // ChangeKey is an atomic provider operation; a prior UI authentication would be cleared by SelectApplication.
-                        var result = ERROR.NoError;
+                        var result = ERROR.ProtocolConstraint;
 
-                        if (IsValidAppNumberCurrent != false &&
-                            IsValidAppNumberTarget != false &&
-                            IsValidDesfireAppKeyTarget != false &&
-                            IsValidDesfireAppKeyVersionTarget != false &&
-                            result == ERROR.NoError)
+                        if (true)
                         {
-                            StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+                            StatusText += string.Format("{0}: Changing Key in AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
                             await TryUpdateKeyVersionAsync(device, keyNumberForChange);
 
                             var keySettings = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
@@ -3429,9 +3425,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             await SetOperationResultAsync(
                                 result,
                                 "{0}: Successfully Changed Key {1} of AppID {2}\n",
-                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt },
+                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt },
                                 "{0}: Unable to Change Key {1} of AppID {2}: {3}\n",
-                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString() });
+                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt, result.ToString() });
                             return;
                         }
                     }
