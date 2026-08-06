@@ -1420,21 +1420,32 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             try
             {
+                await SelectMifareDesfireApplicationAsync((uint)_appID);
 
-                await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
-
-                if (await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID) == ERROR.NoError)
+                var authenticationResult = await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
+                if (authenticationResult != ERROR.NoError)
                 {
-                    await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
+                    return authenticationResult;
                 }
+
+                await WriteMifareDesfireDataAsync((byte)_fileNo, _data, _encMode);
+                return ERROR.NoError;
             }
             catch (Exception e)
             {
                 Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                return ERROR.AuthFailure;
+                return ERROR.TransportError;
             }
+        }
 
-            return ERROR.NoError;
+        protected virtual Task SelectMifareDesfireApplicationAsync(uint appId)
+        {
+            return readerDevice.MifareDesfire_SelectApplicationAsync(appId);
+        }
+
+        protected virtual Task WriteMifareDesfireDataAsync(byte fileNo, byte[] data, EncryptionMode encryptionMode)
+        {
+            return readerDevice.MifareDesfire_WriteDataAsync(fileNo, data, (Elatec.NET.Cards.Mifare.EncryptionMode)encryptionMode);
         }
 
         #endregion

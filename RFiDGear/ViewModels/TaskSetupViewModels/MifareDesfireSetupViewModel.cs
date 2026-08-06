@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Created by SharpDevelop.
  * Date: 10/11/2017
  * Time: 22:15
@@ -2922,41 +2922,39 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             result = await device.WriteMiFareDESFireChipFile(DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
                                                                    SelectedDesfireFileCryptoMode, FileNumberCurrentAsInt, AppNumberCurrentAsInt, payload);
 
-                            if (result == ERROR.NoError)
-                            {
-                                StatusText += string.Format("{0}: Successfully Wrote {2} Bytes to FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-
-                                if (consumedDataFileLine)
-                                {
-                                    // advance to the next line so that the following automatic run
-                                    // (e.g. "Markierte Aufgabe automatisch wiederholen") picks up new data
-                                    DesfireDataFileLineIndex++;
-                                    RefreshDesfireDataFilePreview();
-                                }
-                            }
-
-                            if (SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
-                            {
-                                await device.CommitTransactionAsync();
-                            }
-
-                            if (result == ERROR.NoError)
-                            {
-                                if(SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile)
-                                {
-                                    StatusText += string.Format("{0}: Commit Successfully FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
-                                }
-                                
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                            else
+                            if (result != ERROR.NoError)
                             {
                                 await SetErrorStatusAsync(result, "{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
                                 return;
                             }
+
+                            if (SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
+                            {
+                                result = await device.CommitTransactionAsync();
+                                if (result != ERROR.NoError)
+                                {
+                                    await SetErrorStatusAsync(result, "{0}: Unable to Commit FileNo: {1} in AppID: {2}: {3}\n", DateTime.Now, FileNumberCurrentAsInt, AppNumberCurrentAsInt, result);
+                                    return;
+                                }
+                            }
+
+                            StatusText += string.Format("{0}: Successfully Wrote {2} Bytes to FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, payload.Length, AppNumberCurrentAsInt);
+                            if (SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile)
+                            {
+                                StatusText += string.Format("{0}: Commit Successfully FileNo: {1} in AppID: {2}\n", DateTime.Now, FileNumberCurrentAsInt, AppNumberCurrentAsInt);
+                            }
+
+                            CurrentTaskErrorLevel = ERROR.NoError;
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+
+                            if (consumedDataFileLine)
+                            {
+                                // Advance only after the complete write transaction has succeeded.
+                                DesfireDataFileLineIndex++;
+                                RefreshDesfireDataFilePreview();
+                            }
+
+                            return;
                         }
                         else
                         {
