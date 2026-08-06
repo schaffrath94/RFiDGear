@@ -288,6 +288,22 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task DesfireKey_32HexCharacters_IsValidForDesCompatibility()
+        {
+            await RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareDesfireSetupViewModel
+                {
+                    SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_DES,
+                    DesfireWriteKeyCurrent = "00000000000000000000000000000000"
+                };
+
+                Assert.True(viewModel.IsValidDesfireWriteKeyCurrent);
+                Assert.Equal("00000000000000000000000000000000", viewModel.DesfireWriteKeyCurrent);
+            });
+        }
+
+        [Fact]
         public async Task DesfireKeys_PreserveAesValues_WhenValueIsSetBeforeType()
         {
             await RunOnStaThreadAsync(() =>
