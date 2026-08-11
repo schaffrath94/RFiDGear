@@ -1,0 +1,44 @@
+name: Build 195 hardware test package
+
+on:
+  push:
+    branches:
+      - test/195-hardware-build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run focused regressions
+        shell: pwsh
+        run: dotnet test RFiDGear.Tests/RFiDGear.Tests.csproj -c Release --filter "FullyQualifiedName~MifareDesfireSetupViewModelTests|FullyQualifiedName~TaskExecutionServiceTests"
+
+      - name: Publish RFiDGear x64
+        shell: pwsh
+        run: dotnet publish RFiDGear/RFiDGear.csproj -c Release -r win-x64 --self-contained false -o hardware-test-build
+
+      - name: Write build marker
+        shell: pwsh
+        run: |
+          @"
+          RFiDGear #195 hardware validation build
+          Source PR: c3rebro/RFiDGear#198
+          Source commit: $env:GITHUB_SHA
+          Purpose: validate sequenced DESFire ReadData/WriteData with provider-owned Select/Auth/operation path.
+          This is a test build, not a release.
+          "@ | Set-Content -Encoding utf8 hardware-test-build/README-PR198-HARDWARE-TEST.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RFiDGear-PR198-hardware-test-win-x64
+          path: hardware-test-build/
